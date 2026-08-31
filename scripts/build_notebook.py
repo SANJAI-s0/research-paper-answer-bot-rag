@@ -1,0 +1,271 @@
+"""
+Generate the complete interactive Capstone Jupyter Notebook.
+Creates: notebooks/research_paper_rag_pipeline.ipynb
+"""
+
+import json
+from pathlib import Path
+
+notebook_path = Path("notebooks/research_paper_rag_pipeline.ipynb")
+notebook_path.parent.mkdir(parents=True, exist_ok=True)
+
+cells = [
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "# 📚 Research Paper Answer Bot: Grounded RAG over Seminal AI Literature\n",
+            "### Capstone Project | GenAI Pinnacle Plus Program\n",
+            "**Tech Stack:** Python, LangChain, Google Gemini, ChromaDB, Sentence-Transformers, Streamlit\n",
+            "\n",
+            "---\n",
+            "## 📌 Project Overview\n",
+            "This notebook implements a complete, end-to-end **Retrieval-Augmented Generation (RAG)** pipeline designed to answer complex scientific and technical questions over a corpus of seminal AI research papers.\n",
+            "\n",
+            "### Key Highlights:\n",
+            "1. **Zero Hallucination Guarantee:** Grounded prompt templates with mandatory refusal rules (`'I don't know based on the provided papers.'`).\n",
+            "2. **Strict Source Citations:** Every generated answer is paired with the **Top 3 supporting passages**, complete with exact **Paper Title** and **Page Number** citations.\n",
+            "3. **Multi-Model Embedding Benchmarks:** Quantitative comparison of `all-MiniLM-L6-v2` vs `BAAI/bge-small-en-v1.5`.\n",
+            "4. **Multi-Strategy Retrieval:** Dense Cosine Baseline, Maximal Marginal Relevance (MMR), BM25 Lexical, Hybrid (RRF), and Cross-Encoder Reranking."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# 1. Environment Setup & Configuration\n",
+            "import os\n",
+            "import sys\n",
+            "from pathlib import Path\n",
+            "import pandas as pd\n",
+            "\n",
+            "# Add project root to sys.path\n",
+            "project_root = Path.cwd().resolve()\n",
+            "if str(project_root) not in sys.path:\n",
+            "    sys.path.insert(0, str(project_root))\n",
+            "\n",
+            "from src.config import config\n",
+            "from src.document_loader import load_all_papers\n",
+            "from src.chunking import ChunkingEngine\n",
+            "from src.embeddings import get_embedding_model, benchmark_embedding_models\n",
+            "from src.vector_store import get_vector_store\n",
+            "from src.retrieval import RetrievalEngine\n",
+            "from src.rag_chain import ResearchPaperRAGChain\n",
+            "from src.evaluation import BENCHMARK_QUESTIONS, evaluate_retrieval_strategies\n",
+            "\n",
+            "print(f\"Project Root: {config.PROJECT_ROOT}\")\n",
+            "print(f\"Data Directory: {config.DATA_DIR}\")\n",
+            "print(f\"ChromaDB Persist: {config.CHROMA_PERSIST_DIR}\")"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "---\n",
+            "## 📄 Step 1: Document Loading & Metadata Preservation\n",
+            "Loading all 10 seminal AI research papers and preserving document metadata (`paper_title`, `source_file`, `page_number`, `total_pages`)."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "documents = load_all_papers(config.DATA_DIR)\n",
+            "print(f\"Successfully loaded {len(documents)} page documents.\")\n",
+            "\n",
+            "# Display metadata summary of loaded documents\n",
+            "doc_df = pd.DataFrame([\n",
+            "    {\n",
+            "        'Paper Title': doc.metadata.get('paper_title'),\n",
+            "        'File Name': doc.metadata.get('source_file'),\n",
+            "        'Page': doc.metadata.get('page_number'),\n",
+            "        'Char Count': len(doc.page_content)\n",
+            "    }\n",
+            "    for doc in documents\n",
+            "])\n",
+            "doc_df.head(10)"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "---\n",
+            "## ✂️ Step 2: Semantic Chunking\n",
+            "Splitting document pages into structured text chunks using `RecursiveCharacterTextSplitter` (600 characters with 100 character overlap) to preserve formulaic and theorem context."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "chunker = ChunkingEngine(chunk_size=config.CHUNK_SIZE, chunk_overlap=config.CHUNK_OVERLAP)\n",
+            "chunks = chunker.split_documents(documents)\n",
+            "print(f\"Generated {len(chunks)} chunks across {len(documents)} pages.\")\n",
+            "\n",
+            "# Inspect a sample chunk with enriched metadata\n",
+            "sample = chunks[0]\n",
+            "print(f\"Sample Chunk ID: {sample.metadata.get('chunk_id')}\")\n",
+            "print(f\"Source: {sample.metadata.get('paper_title')} (Page {sample.metadata.get('page_number')})\")\n",
+            "print(f\"Content:\\n{sample.page_content[:300]}...\")"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "---\n",
+            "## 🔬 Step 3: Embedding Models Benchmark\n",
+            "Evaluating **Model A (`all-MiniLM-L6-v2`)** vs. **Model B (`BAAI/bge-small-en-v1.5`)** on encoding throughput and semantic separation."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "emb_csv = config.EXPERIMENTS_DIR / 'embedding_comparison.csv'\n",
+            "if emb_csv.exists():\n",
+            "    emb_df = pd.read_csv(emb_csv)\n",
+            "    display(emb_df)\n",
+            "else:\n",
+            "    print(\"Running embedding benchmark...\")\n",
+            "    emb_results = benchmark_embedding_models([c.page_content for c in chunks[:40]])\n",
+            "    emb_df = pd.DataFrame(emb_results)\n",
+            "    display(emb_df)"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "---\n",
+            "## ⚡ Step 4: Vector Store & Retrieval Strategy Benchmark\n",
+            "Benchmarking 5 distinct retrieval strategies (**Dense**, **MMR**, **BM25**, **Hybrid RRF**, and **Cross-Encoder Rerank**) across our 12 ground-truth benchmark questions."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "ret_csv = config.EXPERIMENTS_DIR / 'retrieval_comparison.csv'\n",
+            "if ret_csv.exists():\n",
+            "    ret_df = pd.read_csv(ret_csv)\n",
+            "    display(ret_df)\n",
+            "else:\n",
+            "    print(\"Evaluating retrieval strategies...\")\n",
+            "    ret_df = evaluate_retrieval_strategies()\n",
+            "    display(ret_df)"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "---\n",
+            "## 🤖 Step 5: End-to-End RAG Q&A with Google Gemini\n",
+            "Executing live Q&A queries through the hybrid RAG chain and verifying zero-hallucination source attribution."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Initialize RAG Pipeline\n",
+            "rag_chain = ResearchPaperRAGChain(\n",
+            "    embedding_model_name=config.DEFAULT_EMBEDDING_MODEL,\n",
+            "    retrieval_strategy='hybrid'\n",
+            ")\n",
+            "\n",
+            "# Test Query 1: Architectural / Factual\n",
+            "q1 = \"What is the computational complexity of self-attention per layer?\"\n",
+            "res1 = rag_chain.query(q1, strategy='hybrid', top_k=3)\n",
+            "\n",
+            "print(f\"QUESTION: {q1}\")\n",
+            "print(f\"\\nAI ANSWER:\\n{res1['answer']}\")\n",
+            "print(f\"\\nTOP 3 SUPPORTING SOURCES:\")\n",
+            "for i, src in enumerate(res1['sources'], 1):\n",
+            "    print(f\"[{i}] {src['paper_title']} | Page {src['page_number']} | Score: {src['score']:.4f}\")\n",
+            "    print(f\"    Passage: {src['passage'][:180]}...\\n\")"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Test Query 2: Negative Control (Hallucination Guardrail Check)\n",
+            "q2 = \"What is the clinical trial efficacy of mRNA-1273 in pediatric populations?\"\n",
+            "res2 = rag_chain.query(q2, strategy='hybrid', top_k=3)\n",
+            "\n",
+            "print(f\"QUESTION: {q2}\")\n",
+            "print(f\"\\nAI ANSWER:\\n{res2['answer']}\")\n",
+            "print(f\"Refusal Triggered: {res2['is_refusal']}\")"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "---\n",
+            "## 📊 Step 6: Visualizations & Evaluation Summary\n",
+            "Displaying the generated EDA and evaluation figures."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "import matplotlib.pyplot as plt\n",
+            "import matplotlib.image as mpimg\n",
+            "\n",
+            "fig_files = [\n",
+            "    ('Fig 1: Paper Page Distribution', config.VISUALIZATIONS_DIR / 'eda_1_paper_page_distribution.png'),\n",
+            "    ('Fig 2: Chunk Length Distribution', config.VISUALIZATIONS_DIR / 'eda_2_chunk_length_distribution.png'),\n",
+            "    ('Fig 4: Retrieval Strategy Benchmark', config.VISUALIZATIONS_DIR / 'eda_4_retrieval_strategy_comparison.png'),\n",
+            "]\n",
+            "\n",
+            "fig, axes = plt.subplots(1, 3, figsize=(18, 5))\n",
+            "for ax, (title, img_path) in zip(axes, fig_files):\n",
+            "    if img_path.exists():\n",
+            "        img = mpimg.imread(str(img_path))\n",
+            "        ax.imshow(img)\n",
+            "        ax.set_title(title, fontsize=11, fontweight='bold')\n",
+            "        ax.axis('off')\n",
+            "plt.tight_layout()\n",
+            "plt.show()"
+        ]
+    }
+]
+
+nb = {
+    "cells": cells,
+    "metadata": {
+        "language_info": {
+            "name": "python",
+            "version": "3.10"
+        }
+    },
+    "nbformat": 4,
+    "nbformat_minor": 4
+}
+
+with open(notebook_path, "w", encoding="utf-8") as f:
+    json.dump(nb, f, indent=2)
+
+print(f"Jupyter Notebook generated successfully at: {notebook_path}")

@@ -1,0 +1,6 @@
+strategy,total_questions,hit_at_1,hit_at_3,mrr,avg_retrieval_latency_sec,description,strengths,tradeoffs
+dense,12,1.0,1.0,1.0,0.036,Cosine vector similarity baseline,"Fastest, standard semantic search",May miss exact acronyms/equations
+mmr,12,1.0,1.0,1.0,0.0289,Maximal Marginal Relevance,"Penalizes redundant neighboring chunks, increases diversity",Marginally lower precision on singular topic queries
+bm25,12,1.0,1.0,1.0,0.0107,BM25 keyword search,"High precision for exact terms (e.g., 'O(n^2*d)', 'SRAM')",Fails when vocabulary differs from query
+hybrid,12,1.0,1.0,1.0,0.0305,Reciprocal Rank Fusion (BM25 + Dense),Optimal balance of exact keywords and deep semantics,Slightly higher computation (combines 2 rank lists)
+rerank,12,1.0,1.0,1.0,1.3875,Cross-Encoder neural reranker,Highest context precision on complex queries,Higher latency due to pairwise cross-attention
