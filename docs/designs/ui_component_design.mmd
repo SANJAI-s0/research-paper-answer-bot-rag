@@ -1,0 +1,39 @@
+flowchart TD
+    subgraph PAGE_ROOT["Streamlit Application Root (app.py)"]
+        CONFIG["st.set_page_config(layout='wide', title='Research Paper Answer Bot')"]
+        CSS["Custom Light-First CSS Theme (Cards, Badges, Typography, Shadows)"]
+        STATE["Session State Cache (chat_history, api_key, selected_suggestion)"]
+    end
+
+    subgraph SIDEBAR_COMP["Sidebar Component"]
+        S_SYS["System Section: Gemini API Key (Password Input) & Status"]
+        S_MODEL["Model Section: Embedding Dropdown & Retrieval Strategy Dropdown & Top-K Slider"]
+        S_DOCS["Documents Section: 2 Metric Cards (Papers & Chunks) + Expander List"]
+        S_ACT["Actions: Clear Conversation Button"]
+    end
+
+    subgraph MAIN_COMP["Main Container Component"]
+        M_HEAD["Top Header: Logo + App Title + 'Gemini • RAG Active' Badge"]
+        M_TABS["st.tabs(['Research Assistant', 'Corpus & Evaluation Dashboard'])"]
+    end
+
+    subgraph TAB1_ASSISTANT["Tab 1: Research Assistant"]
+        EMPTY_HERO["Empty State Hero Card: Description + 4 Clickable Suggestion Buttons"]
+        USER_MSG["User Message Bubble: Avatar + Query Text"]
+        AI_CARD["AI Answer Card: Latency & Strategy Badges + Grounded Markdown Answer"]
+        SRC_CARDS["Supporting Source Cards:<br/>• [01] Number Badge<br/>• Bold Paper Title<br/>• Page # Pill<br/>• Excerpt Preview<br/>• 'View full passage' Expander<br/>• Metadata (Score & Strategy)"]
+        INPUT_BAR["st.chat_input('Ask anything about your research papers...')"]
+    end
+
+    subgraph TAB2_DASHBOARD["Tab 2: Corpus & Evaluation Dashboard"]
+        METRICS_GRID["4 Overview Cards: Papers, Chunks, 100% Recall, 0.95 MRR"]
+        EDA_PLOTS["Visualizations: Page Dist, Chunk Lengths, Embeddings, Retrieval Benchmark"]
+        BENCH_TABLES["Interactive Dataframes: Embedding Benchmark & Retrieval Strategy Benchmark"]
+    end
+
+    PAGE_ROOT --> SIDEBAR_COMP
+    PAGE_ROOT --> MAIN_COMP
+    MAIN_COMP --> M_HEAD
+    MAIN_COMP --> M_TABS
+    M_TABS --> TAB1_ASSISTANT
+    M_TABS --> TAB2_DASHBOARD

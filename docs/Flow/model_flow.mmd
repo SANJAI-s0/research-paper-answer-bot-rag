@@ -1,0 +1,25 @@
+flowchart LR
+    subgraph INGEST_MODEL["1. Ingestion Model Flow"]
+        DOCS["Raw PDF Page Text"] --> SPLIT["Recursive Splitter"]
+        SPLIT --> PASSAGES["600-Char Text Passages"]
+        PASSAGES --> HF_EMB["Local Sentence-Transformer<br/>all-MiniLM-L6-v2<br/>(384 Dimensions)"]
+        HF_EMB --> VECTORS["384-D Dense Vectors"]
+        VECTORS --> CHROMA[("ChromaDB Vector Index")]
+    end
+
+    subgraph QUERY_MODEL["2. Query & Generation Model Flow"]
+        Q_IN["User Query Text"] --> Q_EMB["Sentence-Transformer<br/>Encodes Query Vector"]
+        Q_EMB --> SIM["Cosine Similarity Search<br/>cos(θ) = (u · v) / (||u|| ||v||)"]
+        CHROMA -.-> SIM
+        
+        Q_IN --> BM25["BM25 Token Scoring<br/>TF-IDF with k1=1.5, b=0.75"]
+        
+        SIM --> RRF["Reciprocal Rank Fusion<br/>RRF = ∑ 1 / (60 + Rank)"]
+        BM25 --> RRF
+        
+        RRF --> TOP3["Top-3 Relevant Passages"]
+        TOP3 --> PROMPT["Grounded Context Prompt"]
+        Q_IN --> PROMPT
+        PROMPT --> GEMINI["Google Gemini LLM<br/>Temperature: 0.0<br/>Deterministic Greedy Decoding"]
+        GEMINI --> ANSWER["Synthesized Grounded Answer"]
+    end

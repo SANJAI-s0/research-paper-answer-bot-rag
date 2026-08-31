@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant Streamlit as Streamlit UI (app.py)
+    participant Orchestrator as RAG Chain (src/rag_chain.py)
+    participant Retriever as Hybrid Retriever (src/retrieval.py)
+    participant VectorStore as ChromaDB (chroma_db/)
+    participant BM25Store as In-Memory BM25
+    participant GeminiClient as Gemini Client (src/gemini_client.py)
+    participant GeminiAPI as Google Gemini API
+
+    User->>Streamlit: Submit Question
+    Streamlit->>Orchestrator: query(question, strategy, top_k)
+    Orchestrator->>Retriever: retrieve(question, top_k=3)
+    
+    par Dual Candidate Retrieval
+        Retriever->>VectorStore: similarity_search_with_score(k=10)
+        VectorStore-->>Retriever: 10 Dense Candidates
+    and
+        Retriever->>BM25Store: get_top_n(tokens, n=10)
+        BM25Store-->>Retriever: 10 Lexical Candidates
+    end
+
+    Retriever->>Retriever: Compute Reciprocal Rank Fusion (RRF k=60)
+    Retriever-->>Orchestrator: Return Top 3 Fused Documents
+    
+    Orchestrator->>Orchestrator: Build Grounded Prompt with Citations
+    Orchestrator->>GeminiClient: generate_response(prompt, temperature=0.0)
+    GeminiClient->>GeminiAPI: generate_content(model="gemini-3.7-flash")
+    GeminiAPI-->>GeminiClient: Raw Generated Text
+    GeminiClient-->>Orchestrator: Text Response
+    
+    Orchestrator->>Orchestrator: Format Output (Answer + 3 Source Cards)
+    Orchestrator-->>Streamlit: Return Structured JSON Response
+    Streamlit-->>User: Render Grounded Answer & Source Cards

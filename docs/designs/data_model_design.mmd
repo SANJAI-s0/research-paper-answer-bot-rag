@@ -1,0 +1,45 @@
+erDiagram
+    DOCUMENT_PAGE {
+        string page_content "Raw extracted text of single PDF page"
+        string paper_title "Extracted paper title"
+        string source_file "Filename (e.g. attention_is_all_you_need.pdf)"
+        int page_number "1-indexed PDF page"
+        int total_pages "Total page count of paper"
+    }
+
+    DOCUMENT_CHUNK {
+        string page_content "Atomic passage (600 chars)"
+        string chunk_id "Unique hash e.g. attention_p4_c2"
+        int chunk_index "Sequential index in document"
+        string paper_title "Parent paper title"
+        string source_file "Parent file name"
+        int page_number "Exact origin page"
+        int total_pages "Parent total pages"
+    }
+
+    VECTOR_EMBEDDING {
+        string chunk_id "Foreign key to chunk"
+        float32_array vector "384-dimensional dense array"
+        string model_name "all-MiniLM-L6-v2 or BGE-small"
+    }
+
+    BM25_ENTRY {
+        string chunk_id "Foreign key to chunk"
+        string_array tokens "Tokenized terms for inverted index"
+        float term_frequencies "TF-IDF weight mappings"
+    }
+
+    SUPPORTING_SOURCE_CITATION {
+        int rank "Citation rank (1, 2, 3)"
+        string paper_title "Cited paper title"
+        string source_file "PDF filename"
+        int page_number "Page number cited"
+        string passage "Excerpt text snippet"
+        float score "RRF fused relevance score"
+        string strategy "Retrieval strategy used"
+    }
+
+    DOCUMENT_PAGE ||--|{ DOCUMENT_CHUNK : "splits into"
+    DOCUMENT_CHUNK ||--|| VECTOR_EMBEDDING : "encoded into"
+    DOCUMENT_CHUNK ||--|| BM25_ENTRY : "indexed into"
+    DOCUMENT_CHUNK ||--o{ SUPPORTING_SOURCE_CITATION : "retrieved as"

@@ -1,0 +1,37 @@
+stateDiagram-v2
+    [*] --> AppLoaded: Streamlit Initialize (app.py)
+    
+    state AppLoaded {
+        [*] --> CheckSessionState
+        CheckSessionState --> RenderSidebar: Load Models & Chunks
+        CheckSessionState --> RenderTopHeader: Show Gemini Active Badge
+    }
+
+    AppLoaded --> EmptyState: No Chat History
+    AppLoaded --> ActiveConversation: Chat History Exists
+
+    state EmptyState {
+        [*] --> DisplayHeroCard
+        DisplayHeroCard --> DisplaySuggestionPills: 4 Curated Test Queries
+        DisplaySuggestionPills --> ClickSuggestion: User clicks suggestion pill
+    }
+
+    state ActiveConversation {
+        [*] --> RenderUserMessage
+        RenderUserMessage --> RenderAIAnswer
+        RenderAIAnswer --> RenderSourceCards: Top 3 Supporting Passages
+        RenderSourceCards --> ExpandPassage: User clicks 'View full passage'
+    }
+
+    ClickSuggestion --> TriggerRAGQuery
+    ActiveConversation --> ChatInputSubmit: User submits text query
+    ChatInputSubmit --> TriggerRAGQuery
+
+    state TriggerRAGQuery {
+        [*] --> ShowSpinner: 'Retrieving passages and synthesizing answer...'
+        ShowSpinner --> ExecuteRAGChain: Call rag_chain.query()
+        ExecuteRAGChain --> UpdateSessionState: Append question, answer, sources, latency
+        UpdateSessionState --> StRerun: st.rerun()
+    }
+
+    StRerun --> ActiveConversation

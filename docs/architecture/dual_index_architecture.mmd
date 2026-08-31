@@ -1,0 +1,25 @@
+flowchart TD
+    subgraph INPUT["Document Chunks"]
+        CHUNKS["707 Document Chunks<br/>(Text + Enriched Metadata)"]
+    end
+
+    subgraph DENSE["Dense Vector Pipeline (Semantic Conceptual Search)"]
+        CHUNKS --> EMB_ENGINE["Local Sentence-Transformer<br/>• sentence-transformers/all-MiniLM-L6-v2 (384-D)<br/>• BAAI/bge-small-en-v1.5 (384-D)"]
+        EMB_ENGINE --> VEC_DATA["Dense Vector Embeddings<br/>Shape: (707, 384)"]
+        VEC_DATA --> CHROMA[("ChromaDB Persistent Store<br/>• Distance: Cosine Similarity<br/>• Algorithm: Hierarchical Navigable Small World (HNSW)<br/>• Persist Directory: chroma_db/")]
+    end
+
+    subgraph SPARSE["Sparse Lexical Pipeline (Exact Keyword & Formula Match)"]
+        CHUNKS --> TOKENIZER["Regex Word Tokenizer<br/>Lowercased Alphanumeric + Mathematical Tokens"]
+        TOKENIZER --> BM25_ENGINE["Rank-BM25 Engine<br/>• Parameters: k1=1.5, b=0.75<br/>• Computes IDF weights per term"]
+        BM25_ENGINE --> BM25_IDX["In-Memory Inverted Index<br/>Term-to-Document Posting Lists"]
+    end
+
+    subgraph SEARCH_TIME["Query Execution"]
+        Q["User Query"] --> EMB_Q["Encode Query Vector"]
+        Q --> TOK_Q["Tokenize Query String"]
+        EMB_Q --> HNSW_SEARCH["ChromaDB Cosine Nearest Neighbors"]
+        TOK_Q --> BM25_SEARCH["BM25 Score Computation"]
+        CHROMA -.-> HNSW_SEARCH
+        BM25_IDX -.-> BM25_SEARCH
+    end

@@ -1,0 +1,23 @@
+flowchart TD
+    subgraph QUERY_INPUT["User Input"]
+        Q["Query: 'What is the computational complexity of self-attention?'"]
+    end
+
+    subgraph DENSE_RETRIEVAL["Dense Semantic Retrieval (ChromaDB)"]
+        Q --> D_ENC["Sentence-Transformer Embedding"]
+        D_ENC --> D_SEARCH["Cosine Similarity Search (k=10)"]
+        D_SEARCH --> D_LIST["Ranked Dense List:<br/>1. Chunk #14 (Score: 0.89)<br/>2. Chunk #15 (Score: 0.84)<br/>...<br/>10. Chunk #88 (Score: 0.62)"]
+    end
+
+    subgraph BM25_RETRIEVAL["Lexical Retrieval (BM25)"]
+        Q --> B_TOK["Query Tokenizer: ['computational', 'complexity', 'self-attention']"]
+        B_TOK --> B_SEARCH["BM25 Scoring (n=10)"]
+        B_SEARCH --> B_LIST["Ranked BM25 List:<br/>1. Chunk #14 (Score: 18.4)<br/>2. Chunk #202 (Score: 14.1)<br/>...<br/>10. Chunk #512 (Score: 6.2)"]
+    end
+
+    subgraph RRF_FUSION["Reciprocal Rank Fusion (RRF Engine)"]
+        D_LIST --> FUSION_LOGIC["Calculate RRF Score for each Document d:<br/>RRF(d) = 1/(60 + Rank_dense) + 1/(60 + Rank_bm25)"]
+        B_LIST --> FUSION_LOGIC
+        FUSION_LOGIC --> SORT_FUSED["Sort Documents Descending by RRF Score"]
+        SORT_FUSED --> FINAL_TOP3["Top-3 Supporting Chunks:<br/>[1] Attention Is All You Need (Page 4, Score: 0.0325)<br/>[2] Attention Paper Excerpt (Page 6, Score: 0.0320)<br/>[3] Attention Complexity Table (Page 4, Score: 0.0320)"]
+    end

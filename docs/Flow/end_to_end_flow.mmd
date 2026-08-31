@@ -1,0 +1,42 @@
+flowchart TD
+    subgraph UI["Streamlit User Interface (Frontend)"]
+        U_IN["User Input / Suggested Question Pill"]
+        U_CARD["Render User Message Bubble"]
+        A_CARD["Render AI Grounded Answer Card"]
+        SRC_CARD["Render Top 3 Supporting Citation Cards<br/>(Paper Title, Page #, Excerpt, Score)"]
+    end
+
+    subgraph BACKEND["RAG Orchestrator (src/rag_chain.py)"]
+        QUERY_HANDLER["Query Handler & Strategy Dispatcher"]
+        PROMPT_BUILDER["Grounded XML Prompt Builder<br/>(src/prompts.py)"]
+        PARSER["Response & Citation Parser"]
+    end
+
+    subgraph RETRIEVAL["Hybrid Retrieval Engine (src/retrieval.py)"]
+        DENSE_Q["Dense Semantic Search (Top-10)"]
+        BM25_Q["BM25 Lexical Search (Top-10)"]
+        RRF_FUSION["Reciprocal Rank Fusion (k=60)<br/>Score = ∑ 1 / (60 + Rank)"]
+    end
+
+    subgraph STORAGE["Storage Layer"]
+        CHROMA[("ChromaDB Vector Store<br/>Persistent HNSW Index")]
+        BM25_IDX["In-Memory BM25 Index<br/>Token Inverted List"]
+    end
+
+    subgraph LLM["Generative LLM Engine"]
+        GEMINI["Google Gemini API<br/>(gemini-3.7-flash)<br/>Temperature: 0.0"]
+    end
+
+    U_IN --> U_CARD
+    U_IN --> QUERY_HANDLER
+    QUERY_HANDLER --> DENSE_Q
+    QUERY_HANDLER --> BM25_Q
+    CHROMA -.-> DENSE_Q
+    BM25_IDX -.-> BM25_Q
+    DENSE_Q --> RRF_FUSION
+    BM25_Q --> RRF_FUSION
+    RRF_FUSION -->|Top-3 Grounded Chunks| PROMPT_BUILDER
+    PROMPT_BUILDER --> GEMINI
+    GEMINI --> PARSER
+    PARSER --> A_CARD
+    PARSER --> SRC_CARD

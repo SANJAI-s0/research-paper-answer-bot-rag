@@ -1,0 +1,31 @@
+flowchart TD
+    subgraph STAGE1["Stage 1: Document Preprocessing & Metadata Engine"]
+        A1["10 Seminal Research Papers<br/>(109 Total Pages)"] --> A2["PyPDF Document Loader<br/>(src/document_loader.py)"]
+        A2 --> A3["Metadata Preserver<br/>• paper_title<br/>• source_file<br/>• page_number<br/>• total_pages"]
+        A3 --> A4["Recursive Character Text Splitter<br/>(600 chars / 100 overlap)<br/>(src/chunking.py)"]
+        A4 --> A5["707 Document Chunks<br/>(with chunk_id & chunk_index)"]
+    end
+
+    subgraph STAGE2["Stage 2: Dual Indexing & Storage"]
+        A5 --> B1["Hugging Face Sentence-Transformers<br/>(all-MiniLM-L6-v2 vs BGE-small)"]
+        B1 --> B2[("ChromaDB Vector Store<br/>Persistent HNSW Cosine Index<br/>(chroma_db/)")]
+        A5 --> B3["In-Memory BM25 Lexical Index<br/>(Rank-BM25 Token Inverted List)"]
+    end
+
+    subgraph STAGE3["Stage 3: Hybrid Retrieval & Fusion"]
+        Q["User Query"] --> C1["Dense Vector Search<br/>(Top-10 Candidates)"]
+        Q --> C2["BM25 Lexical Search<br/>(Top-10 Candidates)"]
+        B2 -.-> C1
+        B3 -.-> C2
+        C1 --> C3["Reciprocal Rank Fusion (RRF)<br/>k = 60 Smoothing Constant"]
+        C2 --> C3
+        C3 --> C4["Top-3 Grounded Passages<br/>(Relevance + Exact Keyword Match)"]
+    end
+
+    subgraph STAGE4["Stage 4: Grounded LLM Generation & Output"]
+        C4 --> D1["Zero-Hallucination Prompt Template<br/>(src/prompts.py)"]
+        Q --> D1
+        D1 --> D2["Google Gemini API<br/>(gemini-3.7-flash, Temp: 0.0)"]
+        D2 --> D3["Grounded Answer + Page-Level Citations"]
+        D3 --> D4["Streamlit Interactive UI<br/>(app.py)"]
+    end

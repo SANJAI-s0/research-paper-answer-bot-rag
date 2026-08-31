@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph INPUT_CONTEXT["Retrieved Context & User Query"]
+        Q["User Question: {question}"]
+        CTX["Top-3 Retrieved Passages:<br/>&lt;source id='1' title='Attention Is All You Need' page='4'&gt;...&lt;/source&gt;<br/>&lt;source id='2' title='...' page='...'&gt;...&lt;/source&gt;"]
+    end
+
+    subgraph PROMPT_ENGINE["Grounded Prompt Construction (src/prompts.py)"]
+        SYS_PROMPT["System Persona:<br/>'You are an expert AI research assistant. Answer strictly based on the provided context.'"]
+        RULES["Mandatory Grounding Rules:<br/>1. Use ONLY facts from provided sources.<br/>2. If missing/insufficient info, output EXACTLY:<br/>   'I don't know based on the provided papers.'<br/>3. Cite paper title and page number for every claim."]
+        ASSEMBLE["Assemble Final Grounded XML Prompt"]
+        
+        SYS_PROMPT --> ASSEMBLE
+        RULES --> ASSEMBLE
+        Q --> ASSEMBLE
+        CTX --> ASSEMBLE
+    end
+
+    subgraph LLM_INFERENCE["Google Gemini LLM (src/gemini_client.py)"]
+        ASSEMBLE --> GEMINI_CALL["google-genai Client<br/>Model: gemini-3.7-flash<br/>Temperature: 0.0 (Greedy Factuality)<br/>Top-P: 0.95, Max Tokens: 1024"]
+        GEMINI_CALL --> RETRY_WRAPPER["Exponential Backoff Retry Decorator<br/>(Handles transient 503 high-demand spikes)"]
+    end
+
+    subgraph OUTPUT_EVAL["Output Generation & Guardrail Check"]
+        RETRY_WRAPPER --> CHECK{"Context Sufficient?"}
+        CHECK -- Yes --> GROUNDED_ANS["Synthesize Factual Answer with [Title, Page #] Citations"]
+        CHECK -- No --> REFUSAL["Deterministic Refusal:<br/>'I don't know based on the provided papers.'"]
+    end
