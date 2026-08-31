@@ -57,6 +57,68 @@ This project delivers an **Auditable Research Paper Answer Bot** that:
 
 ## 🏗️ System Architecture & Data Flow
 
+For an in-depth engineering breakdown with mathematical formulations and sequence diagrams, refer to **[`architecture_and_system_design.md`](architecture_and_system_design.md)**.
+
+### 1. High-Level Flowchart Diagram
+```mermaid
+flowchart TD
+    subgraph S1["1. Corpus Ingestion & Preprocessing"]
+        PDF["10 Seminal AI Papers<br/>(109 Pages PDF)"] --> LOADER["PyPDF Document Loader<br/>(src/document_loader.py)"]
+        LOADER --> META["Metadata Enrichment<br/>• paper_title<br/>• source_file<br/>• page_number<br/>• total_pages"]
+        META --> SPLIT["Recursive Text Splitter<br/>(600 chars / 100 ov)<br/>(src/chunking.py)"]
+        SPLIT --> CHUNKS["707 Atomic Chunks<br/>(Preserving chunk_id & index)"]
+    end
+
+    subgraph S2["2. Dual-Index Storage Layer"]
+        CHUNKS --> EMB["Sentence-Transformers<br/>(all-MiniLM-L6-v2 / BGE-small)"]
+        EMB --> CHROMA[("ChromaDB Vector Store<br/>Persistent HNSW Cosine Index<br/>(chroma_db/)")]
+        CHUNKS --> BM25["In-Memory BM25 Index<br/>(Rank-BM25 Token Inverted Index)"]
+    end
+
+    subgraph S3["3. Hybrid Retrieval Engine (src/retrieval.py)"]
+        QUERY["User Natural Query"] --> DENSE_SEARCH["Dense Semantic Search<br/>(Top-10 Candidates)"]
+        QUERY --> BM25_SEARCH["BM25 Lexical Search<br/>(Top-10 Candidates)"]
+        CHROMA -.-> DENSE_SEARCH
+        BM25 -.-> BM25_SEARCH
+        DENSE_SEARCH --> RRF["Reciprocal Rank Fusion<br/>Score = ∑ 1 / (60 + Rank)"]
+        BM25_SEARCH --> RRF
+        RRF --> TOP3["Top-3 Grounded Chunks<br/>(Highest Multi-Signal Relevance)"]
+    end
+
+    subgraph S4["4. Grounded Synthesis & Guardrail (src/gemini_client.py)"]
+        TOP3 --> PROMPT["Grounded XML Prompt<br/>(src/prompts.py)<br/>• Refusal Rule: 'I don't know...'"]
+        QUERY --> PROMPT
+        PROMPT --> GEMINI["Google Gemini LLM<br/>(gemini-3.7-flash)<br/>• Temperature: 0.0"]
+        GEMINI --> ANSWER["Verified Grounded Answer"]
+        TOP3 --> CITATIONS["Top 3 Supporting Source Cards<br/>(Paper Title, Page #, Excerpt, Score)"]
+    end
+
+    ANSWER --> UI["Streamlit User Interface (app.py)"]
+    CITATIONS --> UI
+```
+
+---
+
+### 2. Architecture & Data Flow Diagram Assets
+
+All system architecture and data flow diagrams are available in **`.svg` (Vector)**, **`.png` (High-Res Image)**, and **`.mmd` (Mermaid Source)** formats:
+
+| Category | Diagram Title | Description | Formats Available |
+|---|---|---|---|
+| **Architecture** | **System Architecture** | 4-Stage End-to-End Pipeline (Ingestion to Synthesis) | [`.svg`](docs/architecture/system_architecture.svg) • [`.png`](docs/architecture/system_architecture.png) • [`.mmd`](docs/architecture/system_architecture.mmd) |
+| **Architecture** | **Dual-Index Architecture** | Dense HNSW Vector Storage + Sparse BM25 Inverted List | [`.svg`](docs/architecture/dual_index_architecture.svg) • [`.png`](docs/architecture/dual_index_architecture.png) • [`.mmd`](docs/architecture/dual_index_architecture.mmd) |
+| **Architecture** | **Hybrid Retrieval (RRF)** | Reciprocal Rank Fusion ($k=60$) Ranking Engine | [`.svg`](docs/architecture/hybrid_retrieval_architecture.svg) • [`.png`](docs/architecture/hybrid_retrieval_architecture.svg) • [`.mmd`](docs/architecture/hybrid_retrieval_architecture.mmd) |
+| **Flow** | **End-to-End Execution Flow** | Complete User Query to Answer & Citation Flow | [`.svg`](docs/Flow/end_to_end_flow.svg) • [`.png`](docs/Flow/end_to_end_flow.png) • [`.mmd`](docs/Flow/end_to_end_flow.mmd) |
+| **Flow** | **Frontend UI State Flow** | Streamlit State Transitions, Pill Click, & Expanders | [`.svg`](docs/Flow/frontend_flow.svg) • [`.png`](docs/Flow/frontend_flow.png) • [`.mmd`](docs/Flow/frontend_flow.mmd) |
+| **Flow** | **Backend Processing Sequence** | Sequence Diagram across Retrievers, Vector DB, & Gemini | [`.svg`](docs/Flow/backend_flow.svg) • [`.png`](docs/Flow/backend_flow.png) • [`.mmd`](docs/Flow/backend_flow.mmd) |
+| **Flow** | **Model & Scoring Flow** | Embedding Dimensionality, Cosine Sim, & BM25 Scoring | [`.svg`](docs/Flow/model_flow.svg) • [`.png`](docs/Flow/model_flow.png) • [`.mmd`](docs/Flow/model_flow.mmd) |
+| **Design** | **Grounded RAG Prompt Design** | Context Boundary Constraints & Refusal Guardrails | [`.svg`](docs/designs/rag_design.svg) • [`.png`](docs/designs/rag_design.png) • [`.mmd`](docs/designs/rag_design.mmd) |
+| **Design** | **UI Component Hierarchy** | Header, Sidebar, Cards, Dashboard Layout Specification | [`.svg`](docs/designs/ui_component_design.svg) • [`.png`](docs/designs/ui_component_design.png) • [`.mmd`](docs/designs/ui_component_design.mmd) |
+| **Design** | **Data Model & Schema ERD** | Document Page -> Chunk -> Vector -> Citation Entity Model | [`.svg`](docs/designs/data_model_design.svg) • [`.png`](docs/designs/data_model_design.png) • [`.mmd`](docs/designs/data_model_design.mmd) |
+
+---
+
+### 3. Pipeline Execution Trace
 ```
  ┌────────────────────────────────────────────────────────┐
  │            RESEARCH PAPER CORPUS (PDFs)                │
