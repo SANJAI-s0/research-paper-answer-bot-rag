@@ -1,11 +1,22 @@
 # 📚 Research Paper Answer Bot (Grounded RAG Pipeline)
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![LangChain](https://img.shields.io/badge/LangChain-v0.3+-green.svg)](https://python.langchain.com/)
-[![Google Gemini API](https://img.shields.io/badge/LLM-Google%20Gemini%20API-orange.svg)](https://aistudio.google.com/)
-[![ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-purple.svg)](https://www.trychroma.com/)
-[![Streamlit](https://img.shields.io/badge/UI-Streamlit-red.svg)](https://streamlit.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<div align="center">
+
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![LangChain v0.3+](https://img.shields.io/badge/LangChain-v0.3%2B-1C3C3C?style=flat&logo=langchain&logoColor=white)](https://python.langchain.com/)
+[![Google Gemini](https://img.shields.io/badge/LLM-Google%20Gemini%203.7%20Flash-4285F4?style=flat&logo=google&logoColor=white)](https://aistudio.google.com/)
+[![ChromaDB](https://img.shields.io/badge/Vector%20DB-ChromaDB-6F42C1?style=flat&logo=database&logoColor=white)](https://www.trychroma.com/)
+[![Hugging Face](https://img.shields.io/badge/Embeddings-Sentence--Transformers-FFD21E?style=flat&logo=huggingface&logoColor=black)](https://huggingface.co/sentence-transformers)
+[![Streamlit App](https://img.shields.io/badge/UI-Streamlit%20Modern%20App-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io/)
+
+[![Context Recall](https://img.shields.io/badge/Hit%403%20Recall-100%25-059669?style=flat&logo=checkmarx&logoColor=white)](#-experimental-results--benchmarks)
+[![MRR Score](https://img.shields.io/badge/MRR%20Score-0.950-10B981?style=flat)](#-experimental-results--benchmarks)
+[![Zero Hallucination](https://img.shields.io/badge/Zero%20Hallucination-100%25%20Guarded-4F46E5?style=flat)](#-core-capstone-guarantees--features)
+[![Retrieval Strategy](https://img.shields.io/badge/Retrieval-Hybrid%20RRF%20(Dense%20%2B%20BM25)-2563EB?style=flat)](#2-retrieval-strategy-benchmark)
+[![Presentation](https://img.shields.io/badge/Deck-14%20Slides%20(16%3A9)-D97706?style=flat)](#-presentation--architecture-assets)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat)](LICENSE)
+
+</div>
 
 A production-grade, strictly grounded **Retrieval-Augmented Generation (RAG)** system built over seminal Artificial Intelligence research papers. Features multi-strategy retrieval, open-source embedding benchmarks, Google Gemini synthesis, exact page citation attribution, and an interactive modern Streamlit UI.
 
@@ -14,21 +25,24 @@ Built strictly in accordance with the **GenAI Pinnacle Plus Capstone Project** r
 ---
 
 ## 📑 Table of Contents
-1. [Project Overview & Business Value](#-project-overview--business-value)
-2. [Core Capstone Guarantees & Features](#-core-capstone-guarantees--features)
-3. [System Architecture & Data Flow](#-system-architecture--data-flow)
-4. [Repository Directory Structure](#-repository-directory-structure)
-5. [Quickstart: Installation & Setup](#-quickstart-installation--setup)
-6. [Environment Variables](#-environment-variables)
-7. [Step-by-Step Execution Guide](#-step-by-step-execution-guide)
-8. [Experimental Results & Benchmarks](#-experimental-results--benchmarks)
-   - [Embedding Models Benchmark](#1-embedding-models-benchmark)
-   - [Retrieval Strategy Benchmark](#2-retrieval-strategy-benchmark)
-9. [Evaluation Suite (12 Curated Benchmark Queries)](#-evaluation-suite-12-curated-benchmark-queries)
-10. [Streamlit Web Interface (Stretch Goal)](#-streamlit-web-interface-stretch-goal)
-11. [Presentation & Architecture Assets](#-presentation--architecture-assets)
-12. [Viva Defense Preparation & Concept Cheatsheet](#-viva-defense-preparation--concept-cheatsheet)
-13. [Capstone Rubrics Compliance Matrix](#-capstone-rubrics-compliance-matrix)
+1. [🎯 Project Overview & Business Value](#-project-overview--business-value)
+2. [🚀 Core Capstone Guarantees & Features](#-core-capstone-guarantees--features)
+3. [🏗️ System Architecture & Data Flow](#-system-architecture--data-flow)
+   - [3.1 High-Level Flowchart Diagram](#1-high-level-flowchart-diagram)
+   - [3.2 Architecture & Data Flow Diagram Assets](#2-architecture--data-flow-diagram-assets)
+   - [3.3 Pipeline Execution Trace](#3-pipeline-execution-trace)
+4. [📂 Repository Directory Structure](#-repository-directory-structure)
+5. [⚙️ Quickstart: Installation & Setup](#-quickstart-installation--setup)
+6. [🔑 Environment Variables](#-environment-variables)
+7. [🏃 Step-by-Step Execution Guide](#-step-by-step-execution-guide)
+8. [📊 Experimental Results & Benchmarks](#-experimental-results--benchmarks)
+   - [8.1 Embedding Models Benchmark](#1-embedding-models-benchmark)
+   - [8.2 Retrieval Strategy Benchmark](#2-retrieval-strategy-benchmark)
+9. [🎯 Evaluation Suite (12 Curated Benchmark Queries)](#-evaluation-suite-12-curated-benchmark-queries)
+10. [💻 Streamlit Web Interface (Stretch Goal)](#-streamlit-web-interface-stretch-goal)
+11. [📑 Presentation & Architecture Deliverables](#-presentation--architecture-deliverables)
+12. [🎓 Viva Defense Preparation & Concept Cheatsheet](#-viva-defense-preparation--concept-cheatsheet)
+13. [✅ Capstone Rubrics Compliance Matrix](#-capstone-rubrics-compliance-matrix)
 
 ---
 
@@ -409,7 +423,7 @@ The Streamlit UI (`app.py`) provides:
 
 ---
 
-## 📑 Presentation & Architecture Assets
+## 📑 Presentation & Architecture Deliverables
 
 All submission deliverables are ready in the repository:
 
